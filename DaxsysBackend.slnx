@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Daxsys.Api/Daxsys.Api.csproj" />
+  <Project Path="Daxsys.Application/Daxsys.Application.csproj" />
+  <Project Path="Daxsys.Domain/Daxsys.Domain.csproj" />
+  <Project Path="Daxsys.Infrastructure/Daxsys.Infrastructure.csproj" />
+</Solution>
