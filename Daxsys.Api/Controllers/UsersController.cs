@@ -120,9 +120,9 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}/permissions/context")]
-    public async Task<IActionResult> GetPermissionContext(string userId, [FromQuery] int companyId)
+    public async Task<IActionResult> GetPermissionContext(string userId, [FromQuery] int EmpCodigo)
     {
-        var result = await _userManagementService.GetPermissionContextAsync(userId, companyId);
+        var result = await _userManagementService.GetPermissionContextAsync(userId, EmpCodigo);
 
         if (result is null)
             return NotFound(new { message = "Usuario no encontrado." });
@@ -145,9 +145,9 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}/accesses")]
-    public async Task<IActionResult> GetAccesses(string userId, [FromQuery] int companyId)
+    public async Task<IActionResult> GetAccesses(string userId, [FromQuery] int EmpCodigo)
     {
-        var result = await _userManagementService.GetAccessesAsync(userId, companyId);
+        var result = await _userManagementService.GetAccessesAsync(userId, EmpCodigo);
         return Ok(result);
     }
 
@@ -166,19 +166,19 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}/documents")]
-    public async Task<IActionResult> GetDocuments(string userId, [FromQuery] int companyId)
+    public async Task<IActionResult> GetDocuments(string userId, [FromQuery] int EmpCodigo)
     {
-        var result = await _userManagementService.GetDocumentsAsync(userId, companyId);
+        var result = await _userManagementService.GetDocumentsAsync(userId, EmpCodigo);
         return Ok(result);
     }
 
     [HttpGet("{userId}/document-accesses")]
     public async Task<IActionResult> GetDocumentAccesses(
     string userId,
-    [FromQuery] int companyId,
+    [FromQuery] int EmpCodigo,
     [FromQuery] string documentCode)
     {
-        var result = await _userManagementService.GetDocumentAccessesAsync(userId, companyId, documentCode);
+        var result = await _userManagementService.GetDocumentAccessesAsync(userId, EmpCodigo, documentCode);
         return Ok(result);
     }
 
@@ -199,11 +199,11 @@ public class UsersController : ControllerBase
 
 
     [HttpGet("{userId}/assignable-branches")]
-    public async Task<IActionResult> GetAssignableBranches(string userId,[FromQuery] int companyId)
+    public async Task<IActionResult> GetAssignableBranches(string userId,[FromQuery] int EmpCodigo)
     {
         try
         {
-            var result = await _userManagementService.GetAssignableBranchesAsync(userId, companyId);
+            var result = await _userManagementService.GetAssignableBranchesAsync(userId, EmpCodigo);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -213,11 +213,11 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}/assignable-warehouses")]
-    public async Task<IActionResult> GetAssignableWarehouses(string userId,[FromQuery] int companyId,[FromQuery] string branchId)
+    public async Task<IActionResult> GetAssignableWarehouses(string userId,[FromQuery] int EmpCodigo,[FromQuery] string branchId)
     {
         try
         {
-            var result = await _userManagementService.GetAssignableWarehousesAsync(userId, companyId, branchId);
+            var result = await _userManagementService.GetAssignableWarehousesAsync(userId, EmpCodigo, branchId);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -227,11 +227,11 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}/assignable-points-of-sale")]
-    public async Task<IActionResult> GetAssignablePointsOfSale(string userId,[FromQuery] int companyId,[FromQuery] string branchId)
+    public async Task<IActionResult> GetAssignablePointsOfSale(string userId,[FromQuery] int EmpCodigo,[FromQuery] string branchId)
     {
         try
         {
-            var result = await _userManagementService.GetAssignablePointsOfSaleAsync(userId, companyId, branchId);
+            var result = await _userManagementService.GetAssignablePointsOfSaleAsync(userId, EmpCodigo, branchId);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -241,11 +241,11 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}/assignable-documents")]
-    public async Task<IActionResult> GetAssignableDocuments(string userId,[FromQuery] int companyId,[FromQuery] string archiveType = "ADC")
+    public async Task<IActionResult> GetAssignableDocuments(string userId,[FromQuery] int EmpCodigo,[FromQuery] string archiveType = "ADC")
     {
         try
         {
-            var result = await _userManagementService.GetAssignableDocumentsAsync(userId, companyId, archiveType);
+            var result = await _userManagementService.GetAssignableDocumentsAsync(userId, EmpCodigo, archiveType);
             return Ok(result);
         }
         catch (InvalidOperationException ex)

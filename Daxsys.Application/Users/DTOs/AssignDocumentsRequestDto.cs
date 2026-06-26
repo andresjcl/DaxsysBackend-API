@@ -2,7 +2,7 @@
 
 public class AssignDocumentsRequestDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public bool GenerateDefaultAccesses { get; set; } = true;
     public List<DocumentPermissionItemDto> Documents { get; set; } = new();
 }

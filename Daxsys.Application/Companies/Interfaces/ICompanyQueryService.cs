@@ -5,11 +5,11 @@ namespace Daxsys.Application.Companies.Interfaces;
 public interface ICompanyQueryService
 {
     Task<List<CompanyListItemDto>> GetCompaniesAsync();
-    Task<CompanyDetailDto?> GetCompanyByIdAsync(int companyId);
-    Task<List<BranchDto>> GetBranchesAsync(int companyId);
-    Task<List<WarehouseDto>> GetWarehousesAsync(int companyId, string branchCode);
-    Task<List<PointOfSaleDto>> GetPointsOfSaleAsync(int companyId, string branchCode);
-    Task<CompanyParameterDto?> GetParametersAsync(int companyId);
-    Task<List<CompanyDatabaseDto>> GetDatabasesAsync(int companyId);
-    Task<List<AvailableDocumentDto>> GetAvailableDocumentsAsync(int companyId, string archiveType);
+    Task<CompanyDetailDto?> GetCompanyByIdAsync(int EmpCodigo);
+    Task<List<BranchDto>> GetBranchesAsync(int EmpCodigo);
+    Task<List<WarehouseDto>> GetWarehousesAsync(int EmpCodigo, string branchCode);
+    Task<List<PointOfSaleDto>> GetPointsOfSaleAsync(int EmpCodigo, string branchCode);
+    Task<CompanyParameterDto?> GetParametersAsync(int EmpCodigo);
+    Task<List<CompanyDatabaseDto>> GetDatabasesAsync(int EmpCodigo);
+    Task<List<AvailableDocumentDto>> GetAvailableDocumentsAsync(int EmpCodigo, string archiveType);
 }

@@ -2,7 +2,7 @@
 
 public class PointOfSaleDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string BranchCode { get; set; } = null!;
     public string Code { get; set; } = null!;
     public string? Name { get; set; }

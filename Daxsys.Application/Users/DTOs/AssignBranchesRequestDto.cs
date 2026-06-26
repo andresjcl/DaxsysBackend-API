@@ -2,7 +2,7 @@
 
 public class AssignBranchesRequestDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public List<BranchPermissionItemDto> Branches { get; set; } = new();
 }
 

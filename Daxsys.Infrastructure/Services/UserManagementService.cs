@@ -159,7 +159,7 @@ public class UserManagementService : IUserManagementService
 
         var validBranchCodes = await _context.Branches
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == request.CompanyId)
+            .Where(x => x.EmpCodigo == request.EmpCodigo)
             .Select(x => x.SucCodigo)
             .ToListAsync();
 
@@ -169,7 +169,7 @@ public class UserManagementService : IUserManagementService
             throw new InvalidOperationException("Una o más sucursales no existen en la empresa.");
 
         var current = await _context.UserBranches
-            .Where(x => x.IdUsuario == userId && x.IdEmpresa == request.CompanyId)
+            .Where(x => x.IdUsuario == userId && x.IdEmpresa == request.EmpCodigo)
             .ToListAsync();
 
         _context.UserBranches.RemoveRange(current);
@@ -179,7 +179,7 @@ public class UserManagementService : IUserManagementService
             .Select(x => new UserBranch
             {
                 IdUsuario = userId,
-                IdEmpresa = (byte)request.CompanyId,
+                IdEmpresa = (byte)request.EmpCodigo,
                 CodSucursal = x.BranchId,
                 AutorizaSuc = "S"
             })
@@ -195,21 +195,21 @@ public class UserManagementService : IUserManagementService
 
         var branchExists = await _context.Branches
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == request.CompanyId && x.SucCodigo == request.BranchId);
+            .AnyAsync(x => x.EmpCodigo == request.EmpCodigo && x.SucCodigo == request.BranchId);
 
         if (!branchExists)
             throw new InvalidOperationException("La sucursal no existe.");
 
         var userHasBranch = await _context.UserBranches
             .AsNoTracking()
-            .AnyAsync(x => x.IdUsuario == userId && x.IdEmpresa == request.CompanyId && x.CodSucursal == request.BranchId);
+            .AnyAsync(x => x.IdUsuario == userId && x.IdEmpresa == request.EmpCodigo && x.CodSucursal == request.BranchId);
 
         if (!userHasBranch && !string.Equals(userId, "administrador", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Primero debes asignar la sucursal al usuario.");
 
         var validWarehouseCodes = await _context.Warehouses
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == request.CompanyId && x.SucCodigo == request.BranchId)
+            .Where(x => x.EmpCodigo == request.EmpCodigo && x.SucCodigo == request.BranchId)
             .Select(x => x.BodCodigo)
             .ToListAsync();
 
@@ -220,7 +220,7 @@ public class UserManagementService : IUserManagementService
 
         var current = await _context.UserWarehouses
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == request.CompanyId
+                     && x.IdEmpresa == request.EmpCodigo
                      && x.CodSucursal == request.BranchId)
             .ToListAsync();
 
@@ -231,7 +231,7 @@ public class UserManagementService : IUserManagementService
             .Select(x => new UserWarehouse
             {
                 IdUsuario = userId,
-                IdEmpresa = (byte)request.CompanyId,
+                IdEmpresa = (byte)request.EmpCodigo,
                 CodSucursal = request.BranchId,
                 CodBodega = x.WarehouseId,
                 AutorizaBod = "S"
@@ -248,21 +248,21 @@ public class UserManagementService : IUserManagementService
 
         var branchExists = await _context.Branches
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == request.CompanyId && x.SucCodigo == request.BranchId);
+            .AnyAsync(x => x.EmpCodigo == request.EmpCodigo && x.SucCodigo == request.BranchId);
 
         if (!branchExists)
             throw new InvalidOperationException("La sucursal no existe.");
 
         var userHasBranch = await _context.UserBranches
             .AsNoTracking()
-            .AnyAsync(x => x.IdUsuario == userId && x.IdEmpresa == request.CompanyId && x.CodSucursal == request.BranchId);
+            .AnyAsync(x => x.IdUsuario == userId && x.IdEmpresa == request.EmpCodigo && x.CodSucursal == request.BranchId);
 
         if (!userHasBranch && !string.Equals(userId, "administrador", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Primero debes asignar la sucursal al usuario.");
 
         var validPointCodes = await _context.PointsOfSale
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == request.CompanyId && x.SucCodigo == request.BranchId)
+            .Where(x => x.EmpCodigo == request.EmpCodigo && x.SucCodigo == request.BranchId)
             .Select(x => x.PtoCodigo)
             .ToListAsync();
 
@@ -273,7 +273,7 @@ public class UserManagementService : IUserManagementService
 
         var current = await _context.UserPointsOfSales
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == request.CompanyId
+                     && x.IdEmpresa == request.EmpCodigo
                      && x.CodSucursal == request.BranchId)
             .ToListAsync();
 
@@ -284,7 +284,7 @@ public class UserManagementService : IUserManagementService
             .Select(x => new UserPointOfSale
             {
                 IdUsuario = userId,
-                IdEmpresa = (byte)request.CompanyId,
+                IdEmpresa = (byte)request.EmpCodigo,
                 CodSucursal = request.BranchId,
                 CodPtoVta = x.PointOfSaleId,
                 AutorizaPtoVta = "S"
@@ -295,7 +295,7 @@ public class UserManagementService : IUserManagementService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<UserPermissionContextDto?> GetPermissionContextAsync(string userId, int companyId)
+    public async Task<UserPermissionContextDto?> GetPermissionContextAsync(string userId, int EmpCodigo)
     {
         var exists = await _context.Users
             .AsNoTracking()
@@ -306,14 +306,14 @@ public class UserManagementService : IUserManagementService
 
         var branches = await _context.UserBranches
             .AsNoTracking()
-            .Where(x => x.IdUsuario == userId && x.IdEmpresa == companyId)
+            .Where(x => x.IdUsuario == userId && x.IdEmpresa == EmpCodigo)
             .OrderBy(x => x.CodSucursal)
             .Select(x => x.CodSucursal)
             .ToListAsync();
 
         var warehouses = await _context.UserWarehouses
             .AsNoTracking()
-            .Where(x => x.IdUsuario == userId && x.IdEmpresa == companyId)
+            .Where(x => x.IdUsuario == userId && x.IdEmpresa == EmpCodigo)
             .OrderBy(x => x.CodSucursal)
             .ThenBy(x => x.CodBodega)
             .Select(x => new UserWarehouseContextDto
@@ -325,7 +325,7 @@ public class UserManagementService : IUserManagementService
 
         var points = await _context.UserPointsOfSales
             .AsNoTracking()
-            .Where(x => x.IdUsuario == userId && x.IdEmpresa == companyId)
+            .Where(x => x.IdUsuario == userId && x.IdEmpresa == EmpCodigo)
             .OrderBy(x => x.CodSucursal)
             .ThenBy(x => x.CodPtoVta)
             .Select(x => new UserPointOfSaleContextDto
@@ -338,7 +338,7 @@ public class UserManagementService : IUserManagementService
         return new UserPermissionContextDto
         {
             UserId = userId,
-            CompanyId = companyId,
+            EmpCodigo = EmpCodigo,
             Branches = branches,
             Warehouses = warehouses,
             PointsOfSale = points
@@ -361,7 +361,7 @@ public class UserManagementService : IUserManagementService
 
         var current = await _context.UserAccesses
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == request.CompanyId
+                     && x.IdEmpresa == request.EmpCodigo
                      && x.IdSistema == request.SystemId)
             .ToListAsync();
 
@@ -372,7 +372,7 @@ public class UserManagementService : IUserManagementService
         .Select(x => new UserAccess
         {
             IdUsuario = userId,
-            IdEmpresa = request.CompanyId,
+            IdEmpresa = request.EmpCodigo,
             IdSistema = request.SystemId,
             IdOpcion = x.OptionId,
             IdNomOpcion = x.OptionName,
@@ -384,16 +384,16 @@ public class UserManagementService : IUserManagementService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<UserAccessDto>> GetAccessesAsync(string userId, int companyId)
+    public async Task<List<UserAccessDto>> GetAccessesAsync(string userId, int EmpCodigo)
     {
         return await _context.UserAccesses
             .AsNoTracking()
-            .Where(x => x.IdUsuario == userId && x.IdEmpresa == companyId)
+            .Where(x => x.IdUsuario == userId && x.IdEmpresa == EmpCodigo)
             .OrderBy(x => x.IdSistema)
             .ThenBy(x => x.IdOpcion)
             .Select(x => new UserAccessDto
             {
-                CompanyId = (int)x.IdEmpresa,
+                EmpCodigo = (int)x.IdEmpresa,
                 SystemId = x.IdSistema,
                 OptionId = x.IdOpcion,
                 OptionName = x.IdNomOpcion,
@@ -410,7 +410,7 @@ public class UserManagementService : IUserManagementService
             throw new InvalidOperationException("El código del documento es obligatorio.");
 
         var current = await _context.UserDocumentAccesses
-            .Where(x => x.Empresa == request.CompanyId
+            .Where(x => x.Empresa == request.EmpCodigo
                      && x.IdUsuario == userId
                      && x.OpcDocumento == request.DocumentCode)
             .ToListAsync();
@@ -421,7 +421,7 @@ public class UserManagementService : IUserManagementService
             .Where(x => !string.IsNullOrWhiteSpace(x.Option))
             .Select(x => new UserDocumentAccess
             {
-                Empresa = request.CompanyId,
+                Empresa = request.EmpCodigo,
                 IdUsuario = userId,
                 OpcDocumento = request.DocumentCode,
                 Opcion = x.Option,
@@ -441,15 +441,15 @@ public class UserManagementService : IUserManagementService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<UserDocumentDto>> GetDocumentsAsync(string userId, int companyId)
+    public async Task<List<UserDocumentDto>> GetDocumentsAsync(string userId, int EmpCodigo)
     {
         return await _context.UserDocuments
             .AsNoTracking()
-            .Where(x => x.IdUsuario == userId && x.IdEmpresa == companyId)
+            .Where(x => x.IdUsuario == userId && x.IdEmpresa == EmpCodigo)
             .OrderBy(x => x.CodDocumento)
             .Select(x => new UserDocumentDto
             {
-                CompanyId = x.IdEmpresa,
+                EmpCodigo = x.IdEmpresa,
                 DocumentCode = x.CodDocumento,
                 Changes = x.Cambios
             })
@@ -466,13 +466,13 @@ public class UserManagementService : IUserManagementService
     //    try
     //    {
     //        var currentDocuments = await _context.UserDocuments
-    //            .Where(x => x.IdUsuario == userId && x.IdEmpresa == request.CompanyId)
+    //            .Where(x => x.IdUsuario == userId && x.IdEmpresa == request.EmpCodigo)
     //            .ToListAsync();
 
     //        _context.UserDocuments.RemoveRange(currentDocuments);
 
     //        var currentDocumentAccesses = await _context.UserDocumentAccesses
-    //            .Where(x => x.IdUsuario == userId && x.Empresa == request.CompanyId)
+    //            .Where(x => x.IdUsuario == userId && x.Empresa == request.EmpCodigo)
     //            .ToListAsync();
 
     //        _context.UserDocumentAccesses.RemoveRange(currentDocumentAccesses);
@@ -482,7 +482,7 @@ public class UserManagementService : IUserManagementService
     //            .Select(x => new UserDocument
     //            {
     //                IdUsuario = userId,
-    //                IdEmpresa = (byte)request.CompanyId,
+    //                IdEmpresa = (byte)request.EmpCodigo,
     //                CodDocumento = x.DocumentCode!.Trim().ToUpper(),
     //                Cambios = string.IsNullOrWhiteSpace(x.Changes) ? "T" : x.Changes!.Trim().ToUpper()
     //            })
@@ -495,7 +495,7 @@ public class UserManagementService : IUserManagementService
     //            foreach (var document in documents)
     //            {
     //                var defaultAccesses = BuildDefaultDocumentAccesses(
-    //                    request.CompanyId,
+    //                    request.EmpCodigo,
     //                    userId,
     //                    document.CodDocumento);
 
@@ -528,7 +528,7 @@ public class UserManagementService : IUserManagementService
                 .ToList();
 
             var currentDocuments = await _context.UserDocuments
-                .Where(x => x.IdUsuario == userId && x.IdEmpresa == request.CompanyId)
+                .Where(x => x.IdUsuario == userId && x.IdEmpresa == request.EmpCodigo)
                 .ToListAsync();
 
             var currentDocumentCodes = currentDocuments
@@ -551,7 +551,7 @@ public class UserManagementService : IUserManagementService
                 .Select(x => new UserDocument
                 {
                     IdUsuario = userId,
-                    IdEmpresa = (byte)request.CompanyId,
+                    IdEmpresa = (byte)request.EmpCodigo,
                     CodDocumento = x.DocumentCode!.Trim().ToUpper(),
                     Cambios = string.IsNullOrWhiteSpace(x.Changes)
                         ? "T"
@@ -566,7 +566,7 @@ public class UserManagementService : IUserManagementService
             {
                 var accessesToRemove = await _context.UserDocumentAccesses
                     .Where(x => x.IdUsuario == userId
-                             && x.Empresa == request.CompanyId
+                             && x.Empresa == request.EmpCodigo
                              && removedDocumentCodes.Contains(x.OpcDocumento))
                     .ToListAsync();
 
@@ -579,7 +579,7 @@ public class UserManagementService : IUserManagementService
                 foreach (var documentCode in addedDocumentCodes)
                 {
                     var defaultAccesses = BuildDefaultDocumentAccesses(
-                        request.CompanyId,
+                        request.EmpCodigo,
                         userId,
                         documentCode);
 
@@ -597,7 +597,7 @@ public class UserManagementService : IUserManagementService
         }
     }
 
-    private static List<UserDocumentAccess> BuildDefaultDocumentAccesses(int companyId, string userId, string documentCode)
+    private static List<UserDocumentAccess> BuildDefaultDocumentAccesses(int EmpCodigo, string userId, string documentCode)
     {
         var options = new[]
         {
@@ -626,7 +626,7 @@ public class UserManagementService : IUserManagementService
 
         return options.Select(option => new UserDocumentAccess
         {
-            Empresa = companyId,
+            Empresa = EmpCodigo,
             IdUsuario = userId,
             OpcDocumento = documentCode,
             Opcion = option,
@@ -643,17 +643,17 @@ public class UserManagementService : IUserManagementService
     }
 
 
-    public async Task<List<UserDocumentAccessDto>> GetDocumentAccessesAsync(string userId, int companyId, string documentCode)
+    public async Task<List<UserDocumentAccessDto>> GetDocumentAccessesAsync(string userId, int EmpCodigo, string documentCode)
     {
         return await _context.UserDocumentAccesses
             .AsNoTracking()
             .Where(x => x.IdUsuario == userId
-                     && x.Empresa == companyId
+                     && x.Empresa == EmpCodigo
                      && x.OpcDocumento == documentCode)
             .OrderBy(x => x.Opcion)
             .Select(x => new UserDocumentAccessDto
             {
-                CompanyId = x.Empresa,
+                EmpCodigo = x.Empresa,
                 UserId = x.IdUsuario,
                 DocumentCode = x.OpcDocumento,
                 Option = x.Opcion,
@@ -670,25 +670,25 @@ public class UserManagementService : IUserManagementService
             .ToListAsync();
     }
 
-    public async Task<List<AssignableBranchDto>> GetAssignableBranchesAsync(string userId, int companyId)
+    public async Task<List<AssignableBranchDto>> GetAssignableBranchesAsync(string userId, int EmpCodigo)
     {
         await EnsureUserExists(userId);
 
         var assigned = await _context.UserBranches
             .AsNoTracking()
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == companyId
+                     && x.IdEmpresa == EmpCodigo
                      && x.AutorizaSuc == "S")
             .Select(x => x.CodSucursal)
             .ToListAsync();
 
         return await _context.Branches
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId)
+            .Where(x => x.EmpCodigo == EmpCodigo)
             .OrderBy(x => x.SucCodigo)
             .Select(x => new AssignableBranchDto
             {
-                CompanyId = x.EmpCodigo,
+                EmpCodigo = x.EmpCodigo,
                 BranchId = x.SucCodigo,
                 BranchName = x.SucNombre,
                 HasAccess = assigned.Contains(x.SucCodigo)
@@ -696,14 +696,14 @@ public class UserManagementService : IUserManagementService
             .ToListAsync();
     }
 
-    public async Task<List<AssignableWarehouseDto>> GetAssignableWarehousesAsync(string userId,int companyId,string branchId)
+    public async Task<List<AssignableWarehouseDto>> GetAssignableWarehousesAsync(string userId,int EmpCodigo,string branchId)
     {
         await EnsureUserExists(userId);
 
         var assigned = await _context.UserWarehouses
             .AsNoTracking()
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == companyId
+                     && x.IdEmpresa == EmpCodigo
                      && x.CodSucursal == branchId
                      && x.AutorizaBod == "S")
             .Select(x => x.CodBodega)
@@ -711,11 +711,11 @@ public class UserManagementService : IUserManagementService
 
         return await _context.Warehouses
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId && x.SucCodigo == branchId)
+            .Where(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchId)
             .OrderBy(x => x.BodCodigo)
             .Select(x => new AssignableWarehouseDto
             {
-                CompanyId = x.EmpCodigo,
+                EmpCodigo = x.EmpCodigo,
                 BranchId = x.SucCodigo,
                 WarehouseId = x.BodCodigo,
                 WarehouseName = x.BodNombre,
@@ -724,14 +724,14 @@ public class UserManagementService : IUserManagementService
             .ToListAsync();
     }
 
-    public async Task<List<AssignablePointOfSaleDto>> GetAssignablePointsOfSaleAsync(string userId,int companyId,string branchId)
+    public async Task<List<AssignablePointOfSaleDto>> GetAssignablePointsOfSaleAsync(string userId,int EmpCodigo,string branchId)
     {
         await EnsureUserExists(userId);
 
         var assigned = await _context.UserPointsOfSales
             .AsNoTracking()
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == companyId
+                     && x.IdEmpresa == EmpCodigo
                      && x.CodSucursal == branchId
                      && x.AutorizaPtoVta == "S")
             .Select(x => x.CodPtoVta)
@@ -739,11 +739,11 @@ public class UserManagementService : IUserManagementService
 
         return await _context.PointsOfSale
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId && x.SucCodigo == branchId)
+            .Where(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchId)
             .OrderBy(x => x.PtoCodigo)
             .Select(x => new AssignablePointOfSaleDto
             {
-                CompanyId = x.EmpCodigo,
+                EmpCodigo = x.EmpCodigo,
                 BranchId = x.SucCodigo,
                 PointOfSaleId = x.PtoCodigo,
                 PointOfSaleName = x.PtoNombre,
@@ -752,13 +752,13 @@ public class UserManagementService : IUserManagementService
             .ToListAsync();
     }
 
-    public async Task<List<AssignableDocumentDto>> GetAssignableDocumentsAsync(string userId,int companyId,string archiveType)
+    public async Task<List<AssignableDocumentDto>> GetAssignableDocumentsAsync(string userId,int EmpCodigo,string archiveType)
     {
         await EnsureUserExists(userId);
 
         var databaseName = await _context.CompanyDatabases
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId && x.ArchTipo == archiveType)
+            .Where(x => x.EmpCodigo == EmpCodigo && x.ArchTipo == archiveType)
             .Select(x => x.ArchNom)
             .FirstOrDefaultAsync();
 
@@ -773,7 +773,7 @@ public class UserManagementService : IUserManagementService
         var assignedDocuments = await _context.UserDocuments
             .AsNoTracking()
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == companyId
+                     && x.IdEmpresa == EmpCodigo
                      && x.Cambios == "T")
             .Select(x => x.CodDocumento)
             .ToListAsync();
@@ -804,7 +804,7 @@ public class UserManagementService : IUserManagementService
 
             result.Add(new AssignableDocumentDto
             {
-                CompanyId = companyId,
+                EmpCodigo = EmpCodigo,
                 DocumentCode = code,
                 DocumentName = reader["Opc_nombre"]?.ToString()?.Trim(),
                 DocumentType = reader["Opc_tipo"]?.ToString()?.Trim(),

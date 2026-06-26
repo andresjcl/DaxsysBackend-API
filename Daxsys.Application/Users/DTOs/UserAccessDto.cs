@@ -2,7 +2,7 @@
 
 public class UserAccessDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string? SystemId { get; set; }
     public string? OptionId { get; set; }
     public string? OptionName { get; set; }

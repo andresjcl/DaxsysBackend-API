@@ -4,7 +4,7 @@ public class InitializeSystemRequestDto
 {
     public string ConfirmationText { get; set; } = null!;
 
-    public int CompanyId { get; set; } = 1;
+    public int EmpCodigo { get; set; } = 1;
     public string CompanyName { get; set; } = "EMPRESA PRUEBAS";
     public string? Ruc { get; set; }
 

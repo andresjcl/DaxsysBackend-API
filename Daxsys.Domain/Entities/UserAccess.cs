@@ -1,4 +1,10 @@
-﻿namespace Daxsys.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Daxsys.Domain.Entities;
+
+[Table("sys_Accesos")]
+[PrimaryKey(nameof(IdClaveDoc))]
 
 public class UserAccess
 {

@@ -1,4 +1,10 @@
-﻿namespace Daxsys.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Daxsys.Domain.Entities;
+
+[Table("sys_Documentos")]
+[PrimaryKey(nameof(IdUsuario), nameof(IdEmpresa), nameof(CodDocumento))]
 
 public class UserDocument
 {

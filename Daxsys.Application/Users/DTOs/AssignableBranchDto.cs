@@ -2,7 +2,7 @@
 
 public class AssignableBranchDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string BranchId { get; set; } = null!;
     public string? BranchName { get; set; }
     public bool HasAccess { get; set; }

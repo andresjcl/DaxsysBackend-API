@@ -2,7 +2,7 @@
 
 public class AssignableDocumentDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string DocumentCode { get; set; } = null!;
     public string? DocumentName { get; set; }
     public string? DocumentType { get; set; }

@@ -47,7 +47,7 @@ public class JwtTokenService : ITokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public string GenerateContextToken(string userId,bool isAdmin,int companyId,string branchId,string? warehouseId,string? pointOfSaleId,DateTime expiresAt)
+    public string GenerateContextToken(string userId,bool isAdmin,int EmpCodigo,string branchId,string? warehouseId,string? pointOfSaleId,DateTime expiresAt)
     {
         var jwtSection = _configuration.GetSection("Jwt");
         var key = jwtSection["Key"]!;
@@ -64,7 +64,7 @@ public class JwtTokenService : ITokenService
         new(ClaimTypes.NameIdentifier, userId),
         new(ClaimTypes.Name, userId),
         new("is_admin", isAdmin.ToString().ToLower()),
-        new("company_id", companyId.ToString()),
+        new("company_id", EmpCodigo.ToString()),
         new("branch_id", branchId),
         new("token_type", "context")
     };

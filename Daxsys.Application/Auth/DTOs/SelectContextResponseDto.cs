@@ -5,7 +5,7 @@ public class SelectContextResponseDto
     public string UserId { get; set; } = null!;
     public bool IsAdmin { get; set; }
 
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string? CompanyName { get; set; }
 
     public string BranchId { get; set; } = null!;

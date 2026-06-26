@@ -2,7 +2,7 @@
 
 public class BranchDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string Code { get; set; } = null!;
     public string? Name { get; set; }
     public string? Address { get; set; }

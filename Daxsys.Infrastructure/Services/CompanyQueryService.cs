@@ -3,6 +3,7 @@ using Daxsys.Application.Companies.Interfaces;
 using Daxsys.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Data.Common;
 
 namespace Daxsys.Infrastructure.Services;
 
@@ -31,11 +32,11 @@ public class CompanyQueryService : ICompanyQueryService
             .ToListAsync();
     }
 
-    public async Task<CompanyDetailDto?> GetCompanyByIdAsync(int companyId)
+    public async Task<CompanyDetailDto?> GetCompanyByIdAsync(int EmpCodigo)
     {
         return await _context.Companies
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId)
+            .Where(x => x.EmpCodigo == EmpCodigo)
             .Select(x => new CompanyDetailDto
             {
                 Id = x.EmpCodigo,
@@ -55,15 +56,15 @@ public class CompanyQueryService : ICompanyQueryService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<BranchDto>> GetBranchesAsync(int companyId)
+    public async Task<List<BranchDto>> GetBranchesAsync(int EmpCodigo)
     {
         return await _context.Branches
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId)
+            .Where(x => x.EmpCodigo == EmpCodigo)
             .OrderBy(x => x.SucCodigo)
             .Select(x => new BranchDto
             {
-                CompanyId = x.EmpCodigo,
+                EmpCodigo = x.EmpCodigo,
                 Code = x.SucCodigo,
                 Name = x.SucNombre,
                 Address = x.SucDireccion,
@@ -74,15 +75,15 @@ public class CompanyQueryService : ICompanyQueryService
             .ToListAsync();
     }
 
-    public async Task<List<WarehouseDto>> GetWarehousesAsync(int companyId, string branchCode)
+    public async Task<List<WarehouseDto>> GetWarehousesAsync(int EmpCodigo, string branchCode)
     {
         return await _context.Warehouses
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId && x.SucCodigo == branchCode)
+            .Where(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchCode)
             .OrderBy(x => x.BodCodigo)
             .Select(x => new WarehouseDto
             {
-                CompanyId = x.EmpCodigo,
+                EmpCodigo = x.EmpCodigo,
                 BranchCode = x.SucCodigo,
                 Code = x.BodCodigo,
                 Name = x.BodNombre
@@ -90,15 +91,15 @@ public class CompanyQueryService : ICompanyQueryService
             .ToListAsync();
     }
 
-    public async Task<List<PointOfSaleDto>> GetPointsOfSaleAsync(int companyId, string branchCode)
+    public async Task<List<PointOfSaleDto>> GetPointsOfSaleAsync(int EmpCodigo, string branchCode)
     {
         return await _context.PointsOfSale
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId && x.SucCodigo == branchCode)
+            .Where(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchCode)
             .OrderBy(x => x.PtoCodigo)
             .Select(x => new PointOfSaleDto
             {
-                CompanyId = x.EmpCodigo,
+                EmpCodigo = x.EmpCodigo,
                 BranchCode = x.SucCodigo,
                 Code = x.PtoCodigo,
                 Name = x.PtoNombre,
@@ -107,55 +108,128 @@ public class CompanyQueryService : ICompanyQueryService
             })
             .ToListAsync();
     }
-
-    public async Task<CompanyParameterDto?> GetParametersAsync(int companyId)
+    public async Task<CompanyParameterDto?> GetParametersAsync(int EmpCodigo)
     {
         return await _context.CompanyParameters
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId)
+            .Where(x => x.EmpCodigo == EmpCodigo)
             .Select(x => new CompanyParameterDto
             {
-                CompanyId = x.EmpCodigo,
+                // ==================== CLAVE PRIMARIA ====================
+                EmpCodigo = x.EmpCodigo,
+
+                // ==================== CONFIGURACIÓN CONTABLE ====================
+                DefCtaNumNiveles = x.DefCtaNumNiveles,
+                DefCtaNumGrupos = x.DefCtaNumGrupos,
+                DefCtaNumDigNivel = x.DefCtaNumDigNivel,
+                DefCtaNumNiveles1 = x.DefCtaNumNiveles1,
+                DefCtaNumGrupos1 = x.DefCtaNumGrupos1,
+                DefCtaNumDigNivel1 = x.DefCtaNumDigNivel1,
+                DefCtaV = x.DefCtaV,
+
+                // ==================== CIERRE CONTABLE ====================
+                ParContiCierre = x.ParContiCierre,
+                ParInvTipoCierre = x.ParInvTipoCierre,
+
+                // ==================== IVA ====================
+                ParVenIVA = x.ParVenIVA,
+                ParComIVA = x.ParComIVA,
+                ParClvIVA = x.ParClvIVA,
+
+                // ==================== VENTAS ====================
+                ParVensNEm = x.ParVensNEm,
+                ParVensNAcuDoc = x.ParVensNAcuDoc,
+                ParDocPrincipalVta = x.ParDocPrincipalVta,
+                ParPagoCompras = x.ParPagoCompras,
+
+                // ==================== COMPRAS ====================
+                ParComSNEmp = x.ParComSNEmp,
+                ParComSNAcuDoc = x.ParComSNAcuDoc,
+
+                // ==================== PRESUPUESTOS ====================
+                PrsptoNumNiveles = x.PrsptoNumNiveles,
+                PrsptoNumGrupos = x.PrsptoNumGrupos,
+                PrsptoNumDigNivel = x.PrsptoNumDigNivel,
+
+                // ==================== ACUMULACIÓN HISTÓRICA ====================
+                ParAcumHis = x.ParAcumHis,
+                ParAcfNumNiv = x.ParAcfNumNiv,
+
+                // ==================== ROLES Y CLAVES ====================
+                ParRolCodMay = x.ParRolCodMay,
+                ParRolTur = x.ParRolTur,
+                ParClvDsc = x.ParClvDsc,
+
+                // ==================== SUCURSAL PRINCIPAL ====================
                 MainBranchCode = x.ParSucPri,
-                MainSaleDocument = x.ParDocPrincipalVta,
-                SaleIvaCode = x.ParVenIVA,
-                PurchaseIvaCode = x.ParComIVA,
+
+                // ==================== DÍGITOS ====================
+                ParNumerodigitos = x.ParNumerodigitos,
                 CostDigits = x.ParDigitosCostos,
                 PriceDigits = x.ParDigitosPrecios,
-                ImagesPath = x.EmpPathImagenes
+
+                // ==================== FECHAS Y LÍMITES ====================
+                ParFecDes = x.ParFecDes,
+                LimAtrasoEntrada = x.ParLimAtrasoEntrada,
+                LimExtraSalida = x.ParLimExtraSalida,
+                LimExtraEntrada = x.ParLimExtraEntrada,
+                ParDiasMensualesAcf = x.ParDiasMensualesAcf,
+                EmpDiasMensualesAcf = x.EmpDiasMensualesAcf,
+
+                // ==================== CHEQUES ====================
+                ParCheques = x.ParCheques,
+
+                // ==================== CRUCE DE DOCUMENTOS ====================
+                ParCruceDocSucursal = x.ParCruceDocSucursal,
+
+                // ==================== VALIDACIONES SRI ====================
+                ParValiDir = x.ParValiDir,
+                ParValiSRI = x.ParValiSRI,
+                UrlSRI = x.ParUrlSRI,
+
+                // ==================== PATHS Y DIRECTORIOS ====================
+                ParPathImagenes = x.ParPathImagenes,
+                ImagesPath = x.EmpPathImagenes,
+                PathTmpServer = x.PathTmpServer,
+                LongCodDirectorio = x.LongCodDirectorio,
+
+                // ==================== CORREO ====================
+                CtaLocalEmail = x.CtaLocalEmail
             })
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<CompanyDatabaseDto>> GetDatabasesAsync(int companyId)
+    public async Task<List<CompanyDatabaseDto>> GetDatabasesAsync(int EmpCodigo)
     {
         return await _context.CompanyDatabases
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId)
+            .Where(x => x.EmpCodigo == EmpCodigo)
             .OrderBy(x => x.ArchTipo)
             .Select(x => new CompanyDatabaseDto
             {
-                CompanyId = x.EmpCodigo,
+                EmpCodigo = x.EmpCodigo,
                 DatabaseType = x.ArchTipo,
-                DatabaseName = x.ArchNom
+                DatabaseName = x.ArchNom ?? ""
             })
             .ToListAsync();
     }
 
-    public async Task<List<AvailableDocumentDto>> GetAvailableDocumentsAsync(int companyId, string archiveType)
+    public async Task<List<AvailableDocumentDto>> GetAvailableDocumentsAsync(int EmpCodigo, string archiveType)
     {
+        // 1. Obtener el nombre de la base transaccional desde Arch_Datos
         var databaseName = await _context.CompanyDatabases
             .AsNoTracking()
-            .Where(x => x.EmpCodigo == companyId && x.ArchTipo == archiveType)
+            .Where(x => x.EmpCodigo == EmpCodigo && x.ArchTipo == archiveType)
             .Select(x => x.ArchNom)
             .FirstOrDefaultAsync();
 
         if (string.IsNullOrWhiteSpace(databaseName))
-            throw new InvalidOperationException("No se encontró la base transaccional configurada en Emp_Arch.");
+            throw new InvalidOperationException($"No se encontró la base transaccional configurada para el tipo {archiveType}.");
 
         if (!IsSafeSqlIdentifier(databaseName))
             throw new InvalidOperationException("El nombre de la base transaccional no es válido.");
 
+        // 2. Obtener la conexión actual y cambiar de base de datos
         var connection = _context.Database.GetDbConnection();
 
         if (connection.State != ConnectionState.Open)
@@ -163,14 +237,15 @@ public class CompanyQueryService : ICompanyQueryService
 
         await using var command = connection.CreateCommand();
 
+        // Usar la base de datos transaccional
         command.CommandText = $@"
-        SELECT
-            Opc_documento,
-            Opc_nombre,
-            Opc_tipo
-        FROM [{databaseName}].dbo.AdcOpc
-        ORDER BY Opc_documento;
-    ";
+            SELECT
+                Opc_documento AS DocumentCode,
+                Opc_nombre AS DocumentName,
+                Opc_tipo AS DocumentType
+            FROM [{databaseName}].dbo.AdcOpc
+            ORDER BY Opc_documento;
+        ";
 
         var result = new List<AvailableDocumentDto>();
 
@@ -180,9 +255,9 @@ public class CompanyQueryService : ICompanyQueryService
         {
             result.Add(new AvailableDocumentDto
             {
-                DocumentCode = reader["Opc_documento"]?.ToString()?.Trim() ?? "",
-                DocumentName = reader["Opc_nombre"]?.ToString()?.Trim(),
-                DocumentType = reader["Opc_tipo"]?.ToString()?.Trim()
+                DocumentCode = reader["DocumentCode"]?.ToString()?.Trim() ?? "",
+                DocumentName = reader["DocumentName"]?.ToString()?.Trim(),
+                DocumentType = reader["DocumentType"]?.ToString()?.Trim()
             });
         }
 
@@ -193,6 +268,4 @@ public class CompanyQueryService : ICompanyQueryService
     {
         return value.All(c => char.IsLetterOrDigit(c) || c == '_');
     }
-
-
 }

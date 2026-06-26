@@ -20,10 +20,10 @@ public class MenusController : ControllerBase
     [HttpGet("tree")]
     public async Task<IActionResult> GetTree(
         [FromQuery] string userId,
-        [FromQuery] int companyId,
+        [FromQuery] int EmpCodigo,
         [FromQuery] string systemId)
     {
-        var result = await _service.GetMenuTreeAsync(userId, companyId, systemId);
+        var result = await _service.GetMenuTreeAsync(userId, EmpCodigo, systemId);
         return Ok(result);
     }
 

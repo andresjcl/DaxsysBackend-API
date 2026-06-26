@@ -2,7 +2,7 @@
 
 public class AssignAccessesRequestDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string? SystemId { get; set; }
     public List<AccessItemDto> Accesses { get; set; } = new();
 }

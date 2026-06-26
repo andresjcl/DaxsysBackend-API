@@ -68,7 +68,7 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpGet("context")]
-    public async Task<IActionResult> GetContext([FromQuery] int companyId,[FromQuery] string systemId)
+    public async Task<IActionResult> GetContext([FromQuery] int EmpCodigo,[FromQuery] string systemId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? User.FindFirstValue("sub")
@@ -82,7 +82,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var result = await _userContextService.GetContextAsync(userId, companyId, systemId);
+        var result = await _userContextService.GetContextAsync(userId, EmpCodigo, systemId);
 
         if (result is null)
         {

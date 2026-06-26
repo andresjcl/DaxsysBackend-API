@@ -3,7 +3,7 @@
 public class UserPermissionContextDto
 {
     public string UserId { get; set; } = null!;
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public List<string> Branches { get; set; } = new();
     public List<UserWarehouseContextDto> Warehouses { get; set; } = new();
     public List<UserPointOfSaleContextDto> PointsOfSale { get; set; } = new();

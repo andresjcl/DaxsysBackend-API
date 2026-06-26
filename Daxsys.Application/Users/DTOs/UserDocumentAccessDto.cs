@@ -2,7 +2,7 @@
 
 public class UserDocumentAccessDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string UserId { get; set; } = null!;
     public string DocumentCode { get; set; } = null!;
     public string Option { get; set; } = null!;

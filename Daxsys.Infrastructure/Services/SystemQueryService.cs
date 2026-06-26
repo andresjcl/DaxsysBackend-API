@@ -101,7 +101,7 @@ public class SystemQueryService : ISystemQueryService
             )
             VALUES
             (
-                {request.CompanyId},
+                {request.EmpCodigo},
                 {request.CompanyName},
                 {request.Ruc},
                 1
@@ -124,7 +124,7 @@ public class SystemQueryService : ISystemQueryService
             )
             VALUES
             (
-                {request.CompanyId},
+                {request.EmpCodigo},
                 'A',
                 'X',
                 0,
@@ -148,7 +148,7 @@ public class SystemQueryService : ISystemQueryService
             )
             VALUES
             (
-                {request.CompanyId},
+                {request.EmpCodigo},
                 {request.BranchCode},
                 {request.BranchName},
                 {request.WarehouseCode},
@@ -167,7 +167,7 @@ public class SystemQueryService : ISystemQueryService
             )
             VALUES
             (
-                {request.CompanyId},
+                {request.EmpCodigo},
                 {request.BranchCode},
                 {request.WarehouseCode},
                 {request.WarehouseName}
@@ -191,7 +191,7 @@ public class SystemQueryService : ISystemQueryService
                 )
                 VALUES
                 (
-                    {request.CompanyId},
+                    {request.EmpCodigo},
                     {type},
                     {transactionalDb}
                 )
@@ -207,7 +207,7 @@ public class SystemQueryService : ISystemQueryService
             )
             VALUES
             (
-                {request.CompanyId},
+                {request.EmpCodigo},
                 'SRI',
                 {sriDb}
             )

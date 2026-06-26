@@ -9,7 +9,7 @@ public interface ITokenService
     string GenerateContextToken(
     string userId,
     bool isAdmin,
-    int companyId,
+    int EmpCodigo,
     string branchId,
     string? warehouseId,
     string? pointOfSaleId,

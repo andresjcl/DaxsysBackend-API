@@ -14,7 +14,7 @@ public class MenuService
         _context = context;
     }
 
-    public async Task<List<MenuTreeDto>> GetMenuTreeAsync(string userId, int companyId, string systemId)
+    public async Task<List<MenuTreeDto>> GetMenuTreeAsync(string userId, int EmpCodigo, string systemId)
     {
         var menus = await _context.Menus
             .AsNoTracking()
@@ -25,7 +25,7 @@ public class MenuService
         var userAccess = await _context.UserAccesses
             .AsNoTracking()
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == companyId
+                     && x.IdEmpresa == EmpCodigo
                      && x.IdSistema == systemId
                      && x.Accesos == "T")
             .Select(x => x.IdOpcion)
@@ -61,7 +61,7 @@ public class MenuService
 
         var current = await _context.UserAccesses
             .Where(x => x.IdUsuario == userId
-                     && x.IdEmpresa == request.CompanyId
+                     && x.IdEmpresa == request.EmpCodigo
                      && x.IdSistema == request.SystemId)
             .ToListAsync();
 
@@ -71,7 +71,7 @@ public class MenuService
         var newAccess = menus.Select(m => new UserAccess
         {
             IdUsuario = userId,
-            IdEmpresa = request.CompanyId,
+            IdEmpresa = request.EmpCodigo,
             IdSistema = request.SystemId,
             IdOpcion = m.Codigo,
             IdNomOpcion = m.Nombre,

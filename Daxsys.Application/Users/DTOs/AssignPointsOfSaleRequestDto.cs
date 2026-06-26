@@ -2,7 +2,7 @@
 
 public class AssignPointsOfSaleRequestDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string BranchId { get; set; } = null!;
     public List<PointOfSalePermissionItemDto> PointsOfSale { get; set; } = new();
 }

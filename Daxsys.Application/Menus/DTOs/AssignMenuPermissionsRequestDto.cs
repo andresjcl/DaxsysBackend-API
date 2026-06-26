@@ -2,7 +2,7 @@
 
 public class AssignMenuPermissionsRequestDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string SystemId { get; set; } = null!;
     public List<int> MenuIds { get; set; } = new();
 }

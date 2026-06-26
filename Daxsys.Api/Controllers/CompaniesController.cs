@@ -1,5 +1,6 @@
 ﻿using Daxsys.Application.Companies.DTOs;
 using Daxsys.Application.Companies.Interfaces;
+using Daxsys.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,13 +13,16 @@ public class CompaniesController : ControllerBase
 {
     private readonly ICompanyQueryService _companyQueryService;
     private readonly ICompanyCommandService _companyCommandService;
+    private readonly ICompanyRestoreService _companyRestoreService;
 
     public CompaniesController(
         ICompanyQueryService companyQueryService,
-        ICompanyCommandService companyCommandService)
+        ICompanyCommandService companyCommandService,
+         ICompanyRestoreService companyRestoreService)
     {
         _companyQueryService = companyQueryService;
         _companyCommandService = companyCommandService;
+        _companyRestoreService = companyRestoreService; 
     }
 
     [HttpGet]
@@ -28,10 +32,10 @@ public class CompaniesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{companyId:int}")]
-    public async Task<IActionResult> GetCompanyById(int companyId)
+    [HttpGet("{EmpCodigo:int}")]
+    public async Task<IActionResult> GetCompanyById(int EmpCodigo)
     {
-        var result = await _companyQueryService.GetCompanyByIdAsync(companyId);
+        var result = await _companyQueryService.GetCompanyByIdAsync(EmpCodigo);
 
         if (result is null)
             return NotFound(new { message = "Empresa no encontrada." });
@@ -39,31 +43,31 @@ public class CompaniesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{companyId:int}/branches")]
-    public async Task<IActionResult> GetBranches(int companyId)
+    [HttpGet("{EmpCodigo:int}/branches")]
+    public async Task<IActionResult> GetBranches(int EmpCodigo)
     {
-        var result = await _companyQueryService.GetBranchesAsync(companyId);
+        var result = await _companyQueryService.GetBranchesAsync(EmpCodigo);
         return Ok(result);
     }
 
-    [HttpGet("{companyId:int}/branches/{branchCode}/warehouses")]
-    public async Task<IActionResult> GetWarehouses(int companyId, string branchCode)
+    [HttpGet("{EmpCodigo:int}/branches/{branchCode}/warehouses")]
+    public async Task<IActionResult> GetWarehouses(int EmpCodigo, string branchCode)
     {
-        var result = await _companyQueryService.GetWarehousesAsync(companyId, branchCode);
+        var result = await _companyQueryService.GetWarehousesAsync(EmpCodigo, branchCode);
         return Ok(result);
     }
 
-    [HttpGet("{companyId:int}/branches/{branchCode}/points-of-sale")]
-    public async Task<IActionResult> GetPointsOfSale(int companyId, string branchCode)
+    [HttpGet("{EmpCodigo:int}/branches/{branchCode}/points-of-sale")]
+    public async Task<IActionResult> GetPointsOfSale(int EmpCodigo, string branchCode)
     {
-        var result = await _companyQueryService.GetPointsOfSaleAsync(companyId, branchCode);
+        var result = await _companyQueryService.GetPointsOfSaleAsync(EmpCodigo, branchCode);
         return Ok(result);
     }
 
-    [HttpGet("{companyId:int}/parameters")]
-    public async Task<IActionResult> GetParameters(int companyId)
+    [HttpGet("{EmpCodigo:int}/parameters")]
+    public async Task<IActionResult> GetParameters(int EmpCodigo)
     {
-        var result = await _companyQueryService.GetParametersAsync(companyId);
+        var result = await _companyQueryService.GetParametersAsync(EmpCodigo);
 
         if (result is null)
             return NotFound(new { message = "Parámetros no encontrados." });
@@ -71,10 +75,10 @@ public class CompaniesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{companyId:int}/databases")]
-    public async Task<IActionResult> GetDatabases(int companyId)
+    [HttpGet("{EmpCodigo:int}/databases")]
+    public async Task<IActionResult> GetDatabases(int EmpCodigo)
     {
-        var result = await _companyQueryService.GetDatabasesAsync(companyId);
+        var result = await _companyQueryService.GetDatabasesAsync(EmpCodigo);
         return Ok(result);
     }
 
@@ -95,13 +99,30 @@ public class CompaniesController : ControllerBase
         }
     }
 
+    //[HttpPost("restore-and-create")]
+    //public async Task<IActionResult> RestoreAndCreateCompany([FromBody] RestoreCompanyRequestDto request)
+    //{
+    //    try
+    //    {
+    //        var result = await _companyRestoreService.RestoreCompanyFromBackupAsync(request);
+    //        return Ok(result);
+    //    }
+    //    catch (InvalidOperationException ex)
+    //    {
+    //        return BadRequest(new { message = ex.Message });
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, new { message = "Error al restaurar y crear empresa", detail = ex.Message });
+    //    }
+    //}
 
-    [HttpPut("{companyId:int}")]
-    public async Task<IActionResult> UpdateCompany(int companyId, [FromBody] UpdateCompanyRequestDto request)
+    [HttpPut("{EmpCodigo:int}")]
+    public async Task<IActionResult> UpdateCompany(int EmpCodigo, [FromBody] UpdateCompanyRequestDto request)
     {
         try
         {
-            var result = await _companyCommandService.UpdateCompanyAsync(companyId, request);
+            var result = await _companyCommandService.UpdateCompanyAsync(EmpCodigo, request);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -110,12 +131,12 @@ public class CompaniesController : ControllerBase
         }
     }
 
-    [HttpPost("{companyId:int}/branches")]
-    public async Task<IActionResult> CreateBranch(int companyId, [FromBody] CreateBranchRequestDto request)
+    [HttpPost("{EmpCodigo:int}/branches")]
+    public async Task<IActionResult> CreateBranch(int EmpCodigo, [FromBody] CreateBranchRequestDto request)
     {
         try
         {
-            var result = await _companyCommandService.CreateBranchAsync(companyId, request);
+            var result = await _companyCommandService.CreateBranchAsync(EmpCodigo, request);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -124,12 +145,12 @@ public class CompaniesController : ControllerBase
         }
     }
 
-    [HttpPost("{companyId:int}/branches/{branchCode}/warehouses")]
-    public async Task<IActionResult> CreateWarehouse(int companyId, string branchCode, [FromBody] CreateWarehouseRequestDto request)
+    [HttpPost("{EmpCodigo:int}/branches/{branchCode}/warehouses")]
+    public async Task<IActionResult> CreateWarehouse(int EmpCodigo, string branchCode, [FromBody] CreateWarehouseRequestDto request)
     {
         try
         {
-            var result = await _companyCommandService.CreateWarehouseAsync(companyId, branchCode, request);
+            var result = await _companyCommandService.CreateWarehouseAsync(EmpCodigo, branchCode, request);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -138,12 +159,12 @@ public class CompaniesController : ControllerBase
         }
     }
 
-    [HttpPost("{companyId:int}/branches/{branchCode}/points-of-sale")]
-    public async Task<IActionResult> CreatePointOfSale(int companyId, string branchCode, [FromBody] CreatePointOfSaleRequestDto request)
+    [HttpPost("{EmpCodigo:int}/branches/{branchCode}/points-of-sale")]
+    public async Task<IActionResult> CreatePointOfSale(int EmpCodigo, string branchCode, [FromBody] CreatePointOfSaleRequestDto request)
     {
         try
         {
-            var result = await _companyCommandService.CreatePointOfSaleAsync(companyId, branchCode, request);
+            var result = await _companyCommandService.CreatePointOfSaleAsync(EmpCodigo, branchCode, request);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -152,12 +173,12 @@ public class CompaniesController : ControllerBase
         }
     }
 
-    [HttpGet("{companyId:int}/available-documents")]
-    public async Task<IActionResult> GetAvailableDocuments(int companyId,[FromQuery] string archiveType = "ADC")
+    [HttpGet("{EmpCodigo:int}/available-documents")]
+    public async Task<IActionResult> GetAvailableDocuments(int EmpCodigo,[FromQuery] string archiveType = "ADC")
     {
         try
         {
-            var result = await _companyQueryService.GetAvailableDocumentsAsync(companyId, archiveType);
+            var result = await _companyQueryService.GetAvailableDocumentsAsync(EmpCodigo, archiveType);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -166,12 +187,12 @@ public class CompaniesController : ControllerBase
         }
     }
 
-    [HttpPut("{companyId:int}/databases")]
-    public async Task<IActionResult> UpdateDatabases(int companyId,[FromBody] UpdateCompanyDatabasesRequestDto request)
+    [HttpPut("{EmpCodigo:int}/databases")]
+    public async Task<IActionResult> UpdateDatabases(int EmpCodigo,[FromBody] UpdateCompanyDatabasesRequestDto request)
     {
         try
         {
-            var result = await _companyCommandService.UpdateCompanyDatabasesAsync(companyId, request);
+            var result = await _companyCommandService.UpdateCompanyDatabasesAsync(EmpCodigo, request);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -180,12 +201,12 @@ public class CompaniesController : ControllerBase
         }
     }
 
-    [HttpPut("{companyId:int}/parameters")]
-    public async Task<IActionResult> UpdateParameters(int companyId,[FromBody] UpdateCompanyParametersRequestDto request)
+    [HttpPut("{EmpCodigo:int}/parameters")]
+    public async Task<IActionResult> UpdateParameters(int EmpCodigo,[FromBody] UpdateCompanyParametersRequestDto request)
     {
         try
         {
-            var result = await _companyCommandService.UpdateCompanyParametersAsync(companyId, request);
+            var result = await _companyCommandService.UpdateCompanyParametersAsync(EmpCodigo, request);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -194,12 +215,12 @@ public class CompaniesController : ControllerBase
         }
     }
 
-    [HttpDelete("{companyId:int}")]
-    public async Task<IActionResult> DeleteCompany(int companyId)
+    [HttpDelete("{EmpCodigo:int}")]
+    public async Task<IActionResult> DeleteCompany(int EmpCodigo)
     {
         try
         {
-            await _companyCommandService.DeleteCompanyAsync(companyId);
+            await _companyCommandService.DeleteCompanyAsync(EmpCodigo);
             return Ok(new { message = "Empresa eliminada correctamente." });
         }
         catch (InvalidOperationException ex)

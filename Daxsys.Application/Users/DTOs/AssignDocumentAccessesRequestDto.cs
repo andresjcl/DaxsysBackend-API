@@ -2,7 +2,7 @@
 
 public class AssignDocumentAccessesRequestDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string DocumentCode { get; set; } = null!;
     public List<DocumentAccessOptionDto> Options { get; set; } = new();
 }

@@ -2,7 +2,7 @@
 
 public class UserDocumentDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string? DocumentCode { get; set; }
     public string? Changes { get; set; }
 }

@@ -19,7 +19,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         _configuration = configuration;
     }
 
-    public async Task<AuthContextResponseDto?> GetContextAsync(string userId, int companyId, string systemId)
+    public async Task<AuthContextResponseDto?> GetContextAsync(string userId, int EmpCodigo, string systemId)
     {
         var user = await _context.Users
             .AsNoTracking()
@@ -30,7 +30,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
 
         var company = await _context.Companies
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.EmpCodigo == companyId);
+            .FirstOrDefaultAsync(x => x.EmpCodigo == EmpCodigo);
 
         if (company is null)
             return null;
@@ -45,7 +45,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         {
             branches = await _context.Branches
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId)
+                .Where(x => x.EmpCodigo == EmpCodigo)
                 .OrderBy(x => x.SucCodigo)
                 .Select(x => new AuthContextBranchDto
                 {
@@ -56,7 +56,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
 
             warehouses = await _context.Warehouses
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId)
+                .Where(x => x.EmpCodigo == EmpCodigo)
                 .OrderBy(x => x.SucCodigo)
                 .ThenBy(x => x.BodCodigo)
                 .Select(x => new AuthContextWarehouseDto
@@ -69,7 +69,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
 
             pointsOfSale = await _context.PointsOfSale
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId)
+                .Where(x => x.EmpCodigo == EmpCodigo)
                 .OrderBy(x => x.SucCodigo)
                 .ThenBy(x => x.PtoCodigo)
                 .Select(x => new AuthContextPointOfSaleDto
@@ -85,14 +85,14 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
             var branchCodes = await _context.UserBranches
                 .AsNoTracking()
                 .Where(x => x.IdUsuario == userId
-                         && x.IdEmpresa == companyId
+                         && x.IdEmpresa == EmpCodigo
                          && x.AutorizaSuc == "S")
                 .Select(x => x.CodSucursal)
                 .ToListAsync();
 
             branches = await _context.Branches
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId && branchCodes.Contains(x.SucCodigo))
+                .Where(x => x.EmpCodigo == EmpCodigo && branchCodes.Contains(x.SucCodigo))
                 .OrderBy(x => x.SucCodigo)
                 .Select(x => new AuthContextBranchDto
                 {
@@ -104,7 +104,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
             var allowedWarehouses = await _context.UserWarehouses
                 .AsNoTracking()
                 .Where(x => x.IdUsuario == userId
-                         && x.IdEmpresa == companyId
+                         && x.IdEmpresa == EmpCodigo
                          && x.AutorizaBod == "S")
                 .Select(x => new
                 {
@@ -119,7 +119,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
 
             var companyWarehouses = await _context.Warehouses
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId)
+                .Where(x => x.EmpCodigo == EmpCodigo)
                 .OrderBy(x => x.SucCodigo)
                 .ThenBy(x => x.BodCodigo)
                 .Select(x => new
@@ -143,7 +143,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
             var allowedPoints = await _context.UserPointsOfSales
                 .AsNoTracking()
                 .Where(x => x.IdUsuario == userId
-                         && x.IdEmpresa == companyId
+                         && x.IdEmpresa == EmpCodigo
                          && x.AutorizaPtoVta == "S")
                 .Select(x => new
                 {
@@ -158,7 +158,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
 
             var companyPoints = await _context.PointsOfSale
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId)
+                .Where(x => x.EmpCodigo == EmpCodigo)
                 .OrderBy(x => x.SucCodigo)
                 .ThenBy(x => x.PtoCodigo)
                 .Select(x => new
@@ -197,7 +197,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
             allowedCodes = await _context.UserAccesses
                 .AsNoTracking()
                 .Where(x => x.IdUsuario == userId
-                         && x.IdEmpresa == companyId
+                         && x.IdEmpresa == EmpCodigo
                          && x.IdSistema == systemId
                          && x.Accesos == "T")
                 .Select(x => x.IdOpcion!)
@@ -230,7 +230,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         {
             var databaseName = await _context.CompanyDatabases
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId && x.ArchTipo == systemId)
+                .Where(x => x.EmpCodigo == EmpCodigo && x.ArchTipo == systemId)
                 .Select(x => x.ArchNom)
                 .FirstOrDefaultAsync();
 
@@ -268,7 +268,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
             documents = await _context.UserDocuments
                 .AsNoTracking()
                 .Where(x => x.IdUsuario == userId
-                         && x.IdEmpresa == companyId
+                         && x.IdEmpresa == EmpCodigo
                          && x.Cambios == "T")
                 .OrderBy(x => x.CodDocumento)
                 .Select(x => new AuthContextDocumentDto
@@ -285,7 +285,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         // ===============================
         var companyParameter = await _context.CompanyParameters
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.EmpCodigo == companyId);
+            .FirstOrDefaultAsync(x => x.EmpCodigo == EmpCodigo);
 
         var defaultBranchId = companyParameter?.ParSucPri;
 
@@ -303,7 +303,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         {
             defaultWarehouseId = await _context.Branches
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId && x.SucCodigo == defaultBranchId)
+                .Where(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == defaultBranchId)
                 .Select(x => x.BodCodigo)
                 .FirstOrDefaultAsync();
 
@@ -325,7 +325,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         {
             UserId = userId,
             IsAdmin = isAdmin,
-            CompanyId = company.EmpCodigo,
+            EmpCodigo = company.EmpCodigo,
             CompanyName = company.EmpNombre,
             Branches = branches,
             Warehouses = warehouses,
@@ -352,7 +352,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
 
         var company = await _context.Companies
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.EmpCodigo == request.CompanyId);
+            .FirstOrDefaultAsync(x => x.EmpCodigo == request.EmpCodigo);
 
         if (company is null)
             throw new InvalidOperationException("La empresa no existe.");
@@ -362,7 +362,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
 
         var branch = await _context.Branches
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.EmpCodigo == request.CompanyId
+            .FirstOrDefaultAsync(x => x.EmpCodigo == request.EmpCodigo
                                    && x.SucCodigo == request.BranchId);
 
         if (branch is null)
@@ -373,7 +373,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
             var hasBranchAccess = await _context.UserBranches
                 .AsNoTracking()
                 .AnyAsync(x => x.IdUsuario == userId
-                            && x.IdEmpresa == request.CompanyId
+                            && x.IdEmpresa == request.EmpCodigo
                             && x.CodSucursal == request.BranchId
                             && x.AutorizaSuc == "S");
 
@@ -387,7 +387,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         {
             var warehouse = await _context.Warehouses
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.EmpCodigo == request.CompanyId
+                .FirstOrDefaultAsync(x => x.EmpCodigo == request.EmpCodigo
                                        && x.SucCodigo == request.BranchId
                                        && x.BodCodigo == request.WarehouseId);
 
@@ -399,7 +399,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
                 var hasWarehouseAccess = await _context.UserWarehouses
                     .AsNoTracking()
                     .AnyAsync(x => x.IdUsuario == userId
-                                && x.IdEmpresa == request.CompanyId
+                                && x.IdEmpresa == request.EmpCodigo
                                 && x.CodSucursal == request.BranchId
                                 && x.CodBodega == request.WarehouseId
                                 && x.AutorizaBod == "S");
@@ -417,7 +417,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         {
             var pointOfSale = await _context.PointsOfSale
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.EmpCodigo == request.CompanyId
+                .FirstOrDefaultAsync(x => x.EmpCodigo == request.EmpCodigo
                                        && x.SucCodigo == request.BranchId
                                        && x.PtoCodigo == request.PointOfSaleId);
 
@@ -429,7 +429,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
                 var hasPointAccess = await _context.UserPointsOfSales
                     .AsNoTracking()
                     .AnyAsync(x => x.IdUsuario == userId
-                                && x.IdEmpresa == request.CompanyId
+                                && x.IdEmpresa == request.EmpCodigo
                                 && x.CodSucursal == request.BranchId
                                 && x.CodPtoVta == request.PointOfSaleId
                                 && x.AutorizaPtoVta == "S");
@@ -462,7 +462,7 @@ public class UserContextService : Daxsys.Application.Auth.Interfaces.IUserContex
         {
             UserId = userId,
             IsAdmin = isAdmin,
-            CompanyId = company.EmpCodigo,
+            EmpCodigo = company.EmpCodigo,
             CompanyName = company.EmpNombre,
             BranchId = branch.SucCodigo,
             BranchName = branch.SucNombre,

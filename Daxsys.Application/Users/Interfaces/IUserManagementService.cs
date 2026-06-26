@@ -13,18 +13,18 @@ public interface IUserManagementService
     Task AssignBranchesAsync(string userId, AssignBranchesRequestDto request);
     Task AssignWarehousesAsync(string userId, AssignWarehousesRequestDto request);
     Task AssignPointsOfSaleAsync(string userId, AssignPointsOfSaleRequestDto request);
-    Task<UserPermissionContextDto?> GetPermissionContextAsync(string userId, int companyId);
+    Task<UserPermissionContextDto?> GetPermissionContextAsync(string userId, int EmpCodigo);
     Task AssignAccessesAsync(string userId, AssignAccessesRequestDto request);
-    Task<List<UserAccessDto>> GetAccessesAsync(string userId, int companyId);
+    Task<List<UserAccessDto>> GetAccessesAsync(string userId, int EmpCodigo);
 
     Task AssignDocumentsAsync(string userId, AssignDocumentsRequestDto request);
-    Task<List<UserDocumentDto>> GetDocumentsAsync(string userId, int companyId);
+    Task<List<UserDocumentDto>> GetDocumentsAsync(string userId, int EmpCodigo);
 
     Task AssignDocumentAccessesAsync(string userId, AssignDocumentAccessesRequestDto request);
-    Task<List<UserDocumentAccessDto>> GetDocumentAccessesAsync(string userId, int companyId, string documentCode);
-    Task<List<AssignableBranchDto>> GetAssignableBranchesAsync(string userId, int companyId);
-    Task<List<AssignableWarehouseDto>> GetAssignableWarehousesAsync(string userId, int companyId, string branchId);
-    Task<List<AssignablePointOfSaleDto>> GetAssignablePointsOfSaleAsync(string userId, int companyId, string branchId);
+    Task<List<UserDocumentAccessDto>> GetDocumentAccessesAsync(string userId, int EmpCodigo, string documentCode);
+    Task<List<AssignableBranchDto>> GetAssignableBranchesAsync(string userId, int EmpCodigo);
+    Task<List<AssignableWarehouseDto>> GetAssignableWarehousesAsync(string userId, int EmpCodigo, string branchId);
+    Task<List<AssignablePointOfSaleDto>> GetAssignablePointsOfSaleAsync(string userId, int EmpCodigo, string branchId);
 
-    Task<List<AssignableDocumentDto>> GetAssignableDocumentsAsync(string userId, int companyId, string archiveType);
+    Task<List<AssignableDocumentDto>> GetAssignableDocumentsAsync(string userId, int EmpCodigo, string archiveType);
 }

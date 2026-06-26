@@ -1,4 +1,10 @@
-﻿namespace Daxsys.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Daxsys.Domain.Entities;
+
+[Table("sysdocaccs")]
+[PrimaryKey(nameof(Empresa), nameof(IdUsuario), nameof(OpcDocumento), nameof(Opcion))]
 
 public class UserDocumentAccess
 {

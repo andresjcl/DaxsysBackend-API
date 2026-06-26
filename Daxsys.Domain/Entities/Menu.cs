@@ -1,4 +1,10 @@
-﻿namespace Daxsys.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Daxsys.Domain.Entities;
+
+[Table("sys_Menu")]
+[PrimaryKey(nameof(IdMenu))]
 
 public class Menu
 {

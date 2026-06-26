@@ -1,4 +1,10 @@
-﻿namespace Daxsys.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Daxsys.Domain.Entities;
+
+[Table("sys_Bodegas")]
+[PrimaryKey(nameof(IdUsuario), nameof(IdEmpresa), nameof(CodSucursal), nameof(CodBodega))]
 
 public class UserWarehouse
 {

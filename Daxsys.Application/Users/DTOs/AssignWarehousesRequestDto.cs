@@ -2,7 +2,7 @@
 
 public class AssignWarehousesRequestDto
 {
-    public int CompanyId { get; set; }
+    public int EmpCodigo { get; set; }
     public string BranchId { get; set; } = null!;
     public List<WarehousePermissionItemDto> Warehouses { get; set; } = new();
 }

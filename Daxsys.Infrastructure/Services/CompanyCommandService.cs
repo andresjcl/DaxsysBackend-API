@@ -3,22 +3,34 @@ using Daxsys.Application.Companies.Interfaces;
 using Daxsys.Domain.Entities;
 using Daxsys.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace Daxsys.Infrastructure.Services;
 
 public class CompanyCommandService : ICompanyCommandService
 {
     private readonly AppDbContext _context;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<CompanyCommandService> _logger;
 
-    public CompanyCommandService(AppDbContext context)
+    public CompanyCommandService(
+        AppDbContext context,
+    IConfiguration configuration,
+    ILogger<CompanyCommandService> logger)
     {
         _context = context;
+        _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<CreateCompanyResponseDto> CreateCompanyAsync(CreateCompanyRequestDto request)
     {
         ValidateRequest(request);
 
+        // 1. Validar que no exista empresa con el mismo código
         var companyExists = await _context.Companies
             .AsNoTracking()
             .AnyAsync(x => x.EmpCodigo == request.Company.Id);
@@ -26,6 +38,7 @@ public class CompanyCommandService : ICompanyCommandService
         if (companyExists)
             throw new InvalidOperationException("Ya existe una empresa con ese código.");
 
+        // 2. Validar RUC único
         if (!string.IsNullOrWhiteSpace(request.Company.Ruc))
         {
             var rucExists = await _context.Companies
@@ -36,6 +49,7 @@ public class CompanyCommandService : ICompanyCommandService
                 throw new InvalidOperationException("Ya existe una empresa con ese RUC.");
         }
 
+        // 3. Validar que las bases de datos existan
         foreach (var database in request.Databases)
         {
             if (string.IsNullOrWhiteSpace(database.DatabaseType))
@@ -50,12 +64,11 @@ public class CompanyCommandService : ICompanyCommandService
                 throw new InvalidOperationException($"La base de datos '{database.DatabaseName}' no existe o no está ONLINE.");
         }
 
-
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
         {
-            // 1. EMP_DATOS
+            // ✅ 1. CREAR EMPRESA (Emp_Datos)
             var company = new Company
             {
                 EmpCodigo = request.Company.Id,
@@ -74,46 +87,45 @@ public class CompanyCommandService : ICompanyCommandService
             };
 
             _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
 
-            // 2. EMP_PAR
-            var parameter = new CompanyParameter
+            // ✅ 2. CREAR PARÁMETROS (Emp_Par)
+            var parameters = new CompanyParameter
             {
                 EmpCodigo = request.Company.Id,
-                ParConTipCierre = "A",
-                ParInvTipCierre = "X",
-                ParVenSNEmp = false,
-                ParVenSNAcuDoc = false,
+                ParContiCierre = "A",
+                ParInvTipoCierre = "X",
+                ParVensNEm = false,
+                ParVensNAcuDoc = false,
                 ParComSNEmp = false,
                 ParComSNAcuDoc = false,
                 ParAcumHis = false,
-                ParSucPri = request.Parameters.MainBranchCode ?? request.MainBranch.Code,
-                ParDocPrincipalVta = request.Parameters.MainSaleDocument,
-                ParVenIVA = request.Parameters.SaleIvaCode,
-                ParComIVA = request.Parameters.PurchaseIvaCode,
-                ParDigitosCostos = request.Parameters.CostDigits,
-                ParDigitosPrecios = request.Parameters.PriceDigits,
-                EmpPathImagenes = request.Parameters.ImagesPath
+                ParNumerodigitos = 2,
+                ParSucPri = request.MainBranch.Code,
+                ParDocPrincipalVta = request.Parameters?.MainSaleDocument ?? "FAC",
+                ParVenIVA = request.Parameters?.SaleIvaCode ?? "IVA12",
+                ParComIVA = request.Parameters?.PurchaseIvaCode ?? "IVA12",
+                ParDigitosCostos = request.Parameters?.CostDigits ?? 2,
+                ParDigitosPrecios = request.Parameters?.PriceDigits ?? 2,
+                EmpPathImagenes = request.Parameters?.ImagesPath
             };
 
-            _context.CompanyParameters.Add(parameter);
+            _context.CompanyParameters.Add(parameters);
 
-            // 3. EMP_SUC
+            // ✅ 3. CREAR SUCURSAL (Emp_suc)
             var branch = new Branch
             {
                 EmpCodigo = request.Company.Id,
                 SucCodigo = request.MainBranch.Code,
                 SucNombre = request.MainBranch.Name,
                 SucDireccion = request.MainBranch.Address,
-                SucRuc = request.MainBranch.Ruc,
-                BodCodigo = request.MainWarehouse.Code,
-                SucIdTributario = request.MainBranch.TributaryId
+                SucRuc = request.MainBranch.Ruc ?? request.Company.Ruc,
+                SucIdTributario = request.MainBranch.TributaryId,
+                BodCodigo = request.MainWarehouse.Code
             };
 
             _context.Branches.Add(branch);
-            await _context.SaveChangesAsync();
 
-            // 4. EMP_BOD
+            // ✅ 4. CREAR BODEGA (Emp_bod)
             var warehouse = new Warehouse
             {
                 EmpCodigo = request.Company.Id,
@@ -124,7 +136,7 @@ public class CompanyCommandService : ICompanyCommandService
 
             _context.Warehouses.Add(warehouse);
 
-            // 5. EMP_PTOVTA
+            // ✅ 5. CREAR PUNTOS DE VENTA (Emp_PtoVta)
             foreach (var point in request.PointsOfSale)
             {
                 var pos = new PointOfSale
@@ -140,7 +152,7 @@ public class CompanyCommandService : ICompanyCommandService
                 _context.PointsOfSale.Add(pos);
             }
 
-            // 6. EMP_ARCH
+            // ✅ 6. CREAR BASES DE DATOS (Emp_Arch)
             foreach (var database in request.Databases)
             {
                 var db = new CompanyDatabase
@@ -153,12 +165,13 @@ public class CompanyCommandService : ICompanyCommandService
                 _context.CompanyDatabases.Add(db);
             }
 
+            // ✅ UN SOLO SaveChangesAsync para TODOS los INSERT
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return new CreateCompanyResponseDto
             {
-                CompanyId = company.EmpCodigo,
+                EmpCodigo = company.EmpCodigo,
                 CompanyName = company.EmpNombre,
                 MainBranchCode = branch.SucCodigo,
                 MainWarehouseCode = warehouse.BodCodigo,
@@ -216,10 +229,10 @@ public class CompanyCommandService : ICompanyCommandService
             throw new InvalidOperationException("Hay tipos de base repetidos en la solicitud.");
     }
 
-    public async Task<CompanyDetailDto> UpdateCompanyAsync(int companyId, UpdateCompanyRequestDto request)
+    public async Task<CompanyDetailDto> UpdateCompanyAsync(int EmpCodigo, UpdateCompanyRequestDto request)
     {
         var company = await _context.Companies
-            .FirstOrDefaultAsync(x => x.EmpCodigo == companyId);
+            .FirstOrDefaultAsync(x => x.EmpCodigo == EmpCodigo);
 
         if (company is null)
             throw new InvalidOperationException("La empresa no existe.");
@@ -229,7 +242,7 @@ public class CompanyCommandService : ICompanyCommandService
         {
             var rucExists = await _context.Companies
                 .AsNoTracking()
-                .AnyAsync(x => x.EmpCodigo != companyId && x.EmpRuc == request.Ruc);
+                .AnyAsync(x => x.EmpCodigo != EmpCodigo && x.EmpRuc == request.Ruc);
 
             if (rucExists)
                 throw new InvalidOperationException("Ya existe otra empresa con ese RUC.");
@@ -268,28 +281,28 @@ public class CompanyCommandService : ICompanyCommandService
         };
     }
 
-    public async Task<BranchDto> CreateBranchAsync(int companyId, CreateBranchRequestDto request)
+    public async Task<BranchDto> CreateBranchAsync(int EmpCodigo, CreateBranchRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Code))
             throw new InvalidOperationException("El código de sucursal es obligatorio.");
 
         var companyExists = await _context.Companies
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo);
 
         if (!companyExists)
             throw new InvalidOperationException("La empresa no existe.");
 
         var branchExists = await _context.Branches
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId && x.SucCodigo == request.Code);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == request.Code);
 
         if (branchExists)
             throw new InvalidOperationException("Ya existe una sucursal con ese código en la empresa.");
 
         var branch = new Branch
         {
-            EmpCodigo = companyId,
+            EmpCodigo = EmpCodigo,
             SucCodigo = request.Code,
             SucNombre = request.Name,
             SucDireccion = request.Address,
@@ -303,7 +316,7 @@ public class CompanyCommandService : ICompanyCommandService
 
         return new BranchDto
         {
-            CompanyId = branch.EmpCodigo,
+            EmpCodigo = branch.EmpCodigo,
             Code = branch.SucCodigo,
             Name = branch.SucNombre,
             Address = branch.SucDireccion,
@@ -313,28 +326,28 @@ public class CompanyCommandService : ICompanyCommandService
         };
     }
 
-    public async Task<WarehouseDto> CreateWarehouseAsync(int companyId, string branchCode, CreateWarehouseRequestDto request)
+    public async Task<WarehouseDto> CreateWarehouseAsync(int EmpCodigo, string branchCode, CreateWarehouseRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Code))
             throw new InvalidOperationException("El código de bodega es obligatorio.");
 
         var branchExists = await _context.Branches
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId && x.SucCodigo == branchCode);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchCode);
 
         if (!branchExists)
             throw new InvalidOperationException("La sucursal no existe.");
 
         var warehouseExists = await _context.Warehouses
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId && x.SucCodigo == branchCode && x.BodCodigo == request.Code);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchCode && x.BodCodigo == request.Code);
 
         if (warehouseExists)
             throw new InvalidOperationException("Ya existe una bodega con ese código en la sucursal.");
 
         var warehouse = new Warehouse
         {
-            EmpCodigo = companyId,
+            EmpCodigo = EmpCodigo,
             SucCodigo = branchCode,
             BodCodigo = request.Code,
             BodNombre = request.Name
@@ -345,35 +358,35 @@ public class CompanyCommandService : ICompanyCommandService
 
         return new WarehouseDto
         {
-            CompanyId = warehouse.EmpCodigo,
+            EmpCodigo = warehouse.EmpCodigo,
             BranchCode = warehouse.SucCodigo,
             Code = warehouse.BodCodigo,
             Name = warehouse.BodNombre
         };
     }
 
-    public async Task<PointOfSaleDto> CreatePointOfSaleAsync(int companyId, string branchCode, CreatePointOfSaleRequestDto request)
+    public async Task<PointOfSaleDto> CreatePointOfSaleAsync(int EmpCodigo, string branchCode, CreatePointOfSaleRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Code))
             throw new InvalidOperationException("El código del punto de venta es obligatorio.");
 
         var branchExists = await _context.Branches
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId && x.SucCodigo == branchCode);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchCode);
 
         if (!branchExists)
             throw new InvalidOperationException("La sucursal no existe.");
 
         var pointExists = await _context.PointsOfSale
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId && x.SucCodigo == branchCode && x.PtoCodigo == request.Code);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo && x.SucCodigo == branchCode && x.PtoCodigo == request.Code);
 
         if (pointExists)
             throw new InvalidOperationException("Ya existe un punto de venta con ese código en la sucursal.");
 
         var point = new PointOfSale
         {
-            EmpCodigo = companyId,
+            EmpCodigo = EmpCodigo,
             SucCodigo = branchCode,
             PtoCodigo = request.Code,
             PtoNombre = request.Name,
@@ -386,7 +399,7 @@ public class CompanyCommandService : ICompanyCommandService
 
         return new PointOfSaleDto
         {
-            CompanyId = point.EmpCodigo,
+            EmpCodigo = point.EmpCodigo,
             BranchCode = point.SucCodigo,
             Code = point.PtoCodigo,
             Name = point.PtoNombre,
@@ -395,11 +408,11 @@ public class CompanyCommandService : ICompanyCommandService
         };
     }
 
-    public async Task<List<CompanyDatabaseDto>> UpdateCompanyDatabasesAsync(int companyId,UpdateCompanyDatabasesRequestDto request)
+    public async Task<List<CompanyDatabaseDto>> UpdateCompanyDatabasesAsync(int EmpCodigo, UpdateCompanyDatabasesRequestDto request)
     {
         var companyExists = await _context.Companies
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo);
 
         if (!companyExists)
             throw new InvalidOperationException("La empresa no existe.");
@@ -451,13 +464,13 @@ public class CompanyCommandService : ICompanyCommandService
                 var databaseName = item.DatabaseName.Trim();
 
                 var existing = await _context.CompanyDatabases
-                    .FirstOrDefaultAsync(x => x.EmpCodigo == companyId && x.ArchTipo == archiveType);
+                    .FirstOrDefaultAsync(x => x.EmpCodigo == EmpCodigo && x.ArchTipo == archiveType);
 
                 if (existing is null)
                 {
                     _context.CompanyDatabases.Add(new CompanyDatabase
                     {
-                        EmpCodigo = companyId,
+                        EmpCodigo = EmpCodigo,
                         ArchTipo = archiveType,
                         ArchNom = databaseName
                     });
@@ -473,11 +486,11 @@ public class CompanyCommandService : ICompanyCommandService
 
             return await _context.CompanyDatabases
                 .AsNoTracking()
-                .Where(x => x.EmpCodigo == companyId)
+                .Where(x => x.EmpCodigo == EmpCodigo)
                 .OrderBy(x => x.ArchTipo)
                 .Select(x => new CompanyDatabaseDto
                 {
-                    CompanyId = x.EmpCodigo,
+                    EmpCodigo = x.EmpCodigo,
                     DatabaseType = x.ArchTipo,
                     DatabaseName = x.ArchNom
                 })
@@ -490,21 +503,20 @@ public class CompanyCommandService : ICompanyCommandService
         }
     }
 
-   private async Task<bool> DatabaseExistsAsync(string databaseName)
+    private async Task<bool> DatabaseExistsAsync(string databaseName)
     {
         var connection = _context.Database.GetDbConnection();
 
-        if (connection.State != System.Data.ConnectionState.Open)
+        if (connection.State != ConnectionState.Open)
             await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
 
         command.CommandText = @"
-        SELECT COUNT(1)
-        FROM sys.databases
-        WHERE name = @databaseName
-          AND state_desc = 'ONLINE';
-    ";
+            SELECT COUNT(1)
+            FROM sys.databases
+            WHERE name = @databaseName
+              AND state_desc = 'ONLINE';";
 
         var parameter = command.CreateParameter();
         parameter.ParameterName = "@databaseName";
@@ -517,147 +529,280 @@ public class CompanyCommandService : ICompanyCommandService
         return Convert.ToInt32(result) > 0;
     }
 
-    public async Task<CompanyParameterDto> UpdateCompanyParametersAsync(int companyId,UpdateCompanyParametersRequestDto request)
+    public async Task<CompanyParameterDto> UpdateCompanyParametersAsync(int EmpCodigo, UpdateCompanyParametersRequestDto request)
     {
         var companyExists = await _context.Companies
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo);
 
         if (!companyExists)
             throw new InvalidOperationException("La empresa no existe.");
 
-        if (!string.IsNullOrWhiteSpace(request.MainBranchCode))
-        {
-            var branchExists = await _context.Branches
-                .AsNoTracking()
-                .AnyAsync(x => x.EmpCodigo == companyId && x.SucCodigo == request.MainBranchCode);
-
-            if (!branchExists)
-                throw new InvalidOperationException("La sucursal principal no existe.");
-        }
-
+        // ✅ OBTENER LOS PARÁMETROS EXISTENTES DE LA BD
         var parameters = await _context.CompanyParameters
-            .FirstOrDefaultAsync(x => x.EmpCodigo == companyId);
+            .FirstOrDefaultAsync(x => x.EmpCodigo == EmpCodigo);
 
         if (parameters is null)
-        {
-            parameters = new CompanyParameter
-            {
-                EmpCodigo = companyId,
-                ParConTipCierre = "A",
-                ParInvTipCierre = "X",
-                ParVenSNEmp = false,
-                ParVenSNAcuDoc = false,
-                ParComSNEmp = false,
-                ParComSNAcuDoc = false,
-                ParAcumHis = false
-            };
+            throw new InvalidOperationException("No existen parámetros para esta empresa.");
 
-            _context.CompanyParameters.Add(parameters);
-        }
+        // ✅ SOLO ACTUALIZAR LOS CAMPOS QUE VIENEN EN EL REQUEST
+        if (!string.IsNullOrWhiteSpace(request.MainBranchCode))
+            parameters.ParSucPri = request.MainBranchCode;
 
-        parameters.ParSucPri = request.MainBranchCode;
-        parameters.ParDocPrincipalVta = request.MainSaleDocument;
-        parameters.ParVenIVA = request.SaleIvaCode;
-        parameters.ParComIVA = request.PurchaseIvaCode;
-        parameters.ParDigitosCostos = request.CostDigits;
-        parameters.ParDigitosPrecios = request.PriceDigits;
-        parameters.EmpPathImagenes = request.ImagesPath;
+        if (!string.IsNullOrWhiteSpace(request.MainSaleDocument))
+            parameters.ParDocPrincipalVta = request.MainSaleDocument;
+
+        if (!string.IsNullOrWhiteSpace(request.SaleIvaCode))
+            parameters.ParVenIVA = request.SaleIvaCode;
+
+        if (!string.IsNullOrWhiteSpace(request.PurchaseIvaCode))
+            parameters.ParComIVA = request.PurchaseIvaCode;
+
+        if (request.CostDigits.HasValue)
+            parameters.ParDigitosCostos = request.CostDigits.Value;
+
+        if (request.PriceDigits.HasValue)
+            parameters.ParDigitosPrecios = request.PriceDigits.Value;
+
+        if (!string.IsNullOrWhiteSpace(request.ImagesPath))
+            parameters.EmpPathImagenes = request.ImagesPath;
+
+        if (!string.IsNullOrWhiteSpace(request.UrlSRI))
+            parameters.ParUrlSRI = request.UrlSRI;
+
+        if (request.ValidateSRI.HasValue)
+            parameters.ParValiSRI = request.ValidateSRI.Value ? (byte)1 : (byte)0;
+
+        if (request.ValidateDirectory.HasValue)
+            parameters.ParValiDir = request.ValidateDirectory.Value ? (byte)1 : (byte)0;
+
+        if (request.LimAtrasoEntrada.HasValue)
+            parameters.ParLimAtrasoEntrada = request.LimAtrasoEntrada.Value;
+
+        if (request.LimExtraSalida.HasValue)
+            parameters.ParLimExtraSalida = request.LimExtraSalida.Value;
+
+        if (request.LimExtraEntrada.HasValue)
+            parameters.ParLimExtraEntrada = request.LimExtraEntrada.Value;
+
+        if (request.Cheques.HasValue)
+            parameters.ParCheques = request.Cheques.Value;
+
+        if (!string.IsNullOrWhiteSpace(request.PagoCompras))
+            parameters.ParPagoCompras = request.PagoCompras;
+
+        if (!string.IsNullOrWhiteSpace(request.ClvDsc))
+            parameters.ParClvDsc = request.ClvDsc;
+
+        if (!string.IsNullOrWhiteSpace(request.ClvIVA))
+            parameters.ParClvIVA = request.ClvIVA;
 
         await _context.SaveChangesAsync();
 
+        // ✅ RETORNAR TODOS LOS CAMPOS - USAR LOS NOMBRES CORRECTOS DEL DTO
         return new CompanyParameterDto
         {
-            CompanyId = parameters.EmpCodigo,
+            EmpCodigo = parameters.EmpCodigo,
+
+            // Contabilidad
+            DefCtaNumNiveles = parameters.DefCtaNumNiveles,
+            DefCtaNumGrupos = parameters.DefCtaNumGrupos,
+            DefCtaNumDigNivel = parameters.DefCtaNumDigNivel,
+            DefCtaNumNiveles1 = parameters.DefCtaNumNiveles1,
+            DefCtaNumGrupos1 = parameters.DefCtaNumGrupos1,
+            DefCtaNumDigNivel1 = parameters.DefCtaNumDigNivel1,
+            DefCtaV = parameters.DefCtaV,
+
+            // Cierre contable
+            ParContiCierre = parameters.ParContiCierre,
+            ParInvTipoCierre = parameters.ParInvTipoCierre,
+
+            // IVA
+            ParVenIVA = parameters.ParVenIVA,
+            ParComIVA = parameters.ParComIVA,
+            ParClvIVA = parameters.ParClvIVA,
+
+            // Ventas
+            ParVensNEm = parameters.ParVensNEm,
+            ParVensNAcuDoc = parameters.ParVensNAcuDoc,
+            ParDocPrincipalVta = parameters.ParDocPrincipalVta,
+            ParPagoCompras = parameters.ParPagoCompras,
+
+            // Compras
+            ParComSNEmp = parameters.ParComSNEmp,
+            ParComSNAcuDoc = parameters.ParComSNAcuDoc,
+
+            // Presupuestos
+            PrsptoNumNiveles = parameters.PrsptoNumNiveles,
+            PrsptoNumGrupos = parameters.PrsptoNumGrupos,
+            PrsptoNumDigNivel = parameters.PrsptoNumDigNivel,
+
+            // Acumulación
+            ParAcumHis = parameters.ParAcumHis,
+            ParAcfNumNiv = parameters.ParAcfNumNiv,
+
+            // Roles y claves
+            ParRolCodMay = parameters.ParRolCodMay,
+            ParRolTur = parameters.ParRolTur,
+            ParClvDsc = parameters.ParClvDsc,
+
+            // Sucursal principal
             MainBranchCode = parameters.ParSucPri,
-            MainSaleDocument = parameters.ParDocPrincipalVta,
-            SaleIvaCode = parameters.ParVenIVA,
-            PurchaseIvaCode = parameters.ParComIVA,
+
+            // Dígitos
+            ParNumerodigitos = parameters.ParNumerodigitos,
             CostDigits = parameters.ParDigitosCostos,
             PriceDigits = parameters.ParDigitosPrecios,
-            ImagesPath = parameters.EmpPathImagenes
+
+            // Fechas y límites
+            ParFecDes = parameters.ParFecDes,
+            LimAtrasoEntrada = parameters.ParLimAtrasoEntrada,
+            LimExtraSalida = parameters.ParLimExtraSalida,
+            LimExtraEntrada = parameters.ParLimExtraEntrada,
+            ParDiasMensualesAcf = parameters.ParDiasMensualesAcf,
+            EmpDiasMensualesAcf = parameters.EmpDiasMensualesAcf,
+
+            // Cheques
+            ParCheques = parameters.ParCheques,
+
+            // Cruce de documentos
+            ParCruceDocSucursal = parameters.ParCruceDocSucursal,
+
+            // Validaciones SRI
+            ParValiDir = parameters.ParValiDir,
+            ParValiSRI = parameters.ParValiSRI,
+            UrlSRI = parameters.ParUrlSRI,
+
+            // Paths y directorios
+            ParPathImagenes = parameters.ParPathImagenes,
+            ImagesPath = parameters.EmpPathImagenes,
+            PathTmpServer = parameters.PathTmpServer,
+            LongCodDirectorio = parameters.LongCodDirectorio,
+
+            // Correo
+            CtaLocalEmail = parameters.CtaLocalEmail
         };
     }
 
-    public async Task DeleteCompanyAsync(int companyId)
+    public async Task DeleteCompanyAsync(int EmpCodigo)
     {
         var companyExists = await _context.Companies
             .AsNoTracking()
-            .AnyAsync(x => x.EmpCodigo == companyId);
+            .AnyAsync(x => x.EmpCodigo == EmpCodigo);
 
         if (!companyExists)
             throw new InvalidOperationException("La empresa no existe.");
+
+        // 1. Obtener las bases de datos asociadas a la empresa
+        var databases = await _context.CompanyDatabases
+            .AsNoTracking()
+            .Where(x => x.EmpCodigo == EmpCodigo)
+            .ToListAsync();
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
         {
+            // 2. Eliminar las bases de datos físicas (ADC y SRI)
+            foreach (var db in databases)
+            {
+                // Solo eliminar bases de datos tipo ADC y SRI
+                if (db.ArchTipo == "ADC" || db.ArchTipo == "SRI")
+                {
+                    await DropDatabaseAsync(db.ArchNom);
+                    _logger.LogInformation("Base de datos eliminada: {DatabaseName}", db.ArchNom);
+                }
+            }
+
+            // 3. Eliminar registros de la empresa en todas las tablas
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.sysdocaccs
-            WHERE empresa = {companyId}
-        ");
+            DELETE FROM dbo.sysdocaccs WHERE empresa = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.sys_Documentos
-            WHERE idEmpresa = {companyId}
-        ");
+            DELETE FROM dbo.sys_Documentos WHERE idEmpresa = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.sys_Accesos
-            WHERE IdEmpresa = {companyId}
-        ");
+            DELETE FROM dbo.sys_Accesos WHERE IdEmpresa = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.sys_ptoVta
-            WHERE IdEmpresa = {companyId}
-        ");
+            DELETE FROM dbo.sys_ptoVta WHERE IdEmpresa = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.sys_Bodegas
-            WHERE IdEmpresa = {companyId}
-        ");
+            DELETE FROM dbo.sys_Bodegas WHERE IdEmpresa = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.sys_Sucursales
-            WHERE IdEmpresa = {companyId}
-        ");
+            DELETE FROM dbo.sys_Sucursales WHERE IdEmpresa = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.Emp_PtoVta
-            WHERE Emp_Codigo = {companyId}
-        ");
+            DELETE FROM dbo.Emp_PtoVta WHERE Emp_Codigo = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.Emp_Bod
-            WHERE Emp_Codigo = {companyId}
-        ");
+            DELETE FROM dbo.Emp_Bod WHERE Emp_Codigo = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.Emp_Suc
-            WHERE Emp_Codigo = {companyId}
-        ");
+            DELETE FROM dbo.Emp_Suc WHERE Emp_Codigo = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.Emp_Arch
-            WHERE Emp_Codigo = {companyId}
-        ");
+            DELETE FROM dbo.Emp_Arch WHERE Emp_Codigo = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.Emp_Par
-            WHERE Emp_Codigo = {companyId}
-        ");
+            DELETE FROM dbo.Emp_Par WHERE Emp_Codigo = {EmpCodigo}");
 
             await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            DELETE FROM dbo.Emp_Datos
-            WHERE Emp_codigo = {companyId}
-        ");
+            DELETE FROM dbo.Emp_Datos WHERE Emp_codigo = {EmpCodigo}");
 
             await transaction.CommitAsync();
+
+            _logger.LogInformation("Empresa eliminada: {EmpCodigo}", EmpCodigo);
         }
         catch
         {
             await transaction.RollbackAsync();
             throw;
+        }
+    }
+
+    private async Task DropDatabaseAsync(string databaseName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(databaseName))
+                return;
+
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            var masterConnection = connectionString.Replace("BdAdcomDx14DGC", "master");
+
+            await using var connection = new SqlConnection(masterConnection);
+            await connection.OpenAsync();
+
+            // 1. Forzar cierre de conexiones
+            var forceCloseCmd = new SqlCommand(
+                $@"
+            IF EXISTS (SELECT * FROM sys.databases WHERE name = '{databaseName}')
+            BEGIN
+                ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+            END
+            ",
+                connection);
+            await forceCloseCmd.ExecuteNonQueryAsync();
+
+            // 2. Eliminar la base de datos
+            var dropCmd = new SqlCommand(
+                $@"
+            IF EXISTS (SELECT * FROM sys.databases WHERE name = '{databaseName}')
+            BEGIN
+                DROP DATABASE [{databaseName}];
+            END
+            ",
+                connection);
+            await dropCmd.ExecuteNonQueryAsync();
+
+            _logger.LogInformation("Base de datos eliminada: {DatabaseName}", databaseName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar la base de datos: {DatabaseName}", databaseName);
+            // No lanzamos excepción para no interrumpir el proceso
         }
     }
 }
